@@ -1,31 +1,39 @@
-git add .
+# NEXUS — build tekshiruvi, commit va push (Vercel avtomatik deploy qiladi)
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Git add xatolik berdi." -ForegroundColor Red
+function Fail($text) {
+    Write-Host $text -ForegroundColor Red
     exit 1
 }
 
-git status
+# 1. O'zgarish bormi?
+$changes = git status --porcelain
+if ([string]::IsNullOrWhiteSpace($changes)) {
+    Write-Host "Yuboriladigan o'zgarish yo'q." -ForegroundColor Yellow
+    exit 0
+}
+
+# 2. Sayt build bo'lishini tekshirish (xato kod GitHub'ga ketmasin)
+Write-Host "Build tekshirilmoqda..." -ForegroundColor Cyan
+npm run build
+if ($LASTEXITCODE -ne 0) { Fail "Build xatolik berdi. Avval xatoni tuzating." }
+
+# 3. Commit
+git add .
+if ($LASTEXITCODE -ne 0) { Fail "Git add xatolik berdi." }
+
+git status --short
 
 $message = Read-Host "Commit nomi"
-
 if ([string]::IsNullOrWhiteSpace($message)) {
     $message = "Update NEXUS Gaming Setup"
 }
 
 git commit -m "$message"
+if ($LASTEXITCODE -ne 0) { Fail "Commit xatolik berdi." }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Commit xatolik berdi." -ForegroundColor Red
-    exit 1
-}
-
+# 4. Push
 git push
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Push xatolik berdi." -ForegroundColor Red
-    exit 1
-}
+if ($LASTEXITCODE -ne 0) { Fail "Push xatolik berdi." }
 
 Write-Host ""
 Write-Host "====================================" -ForegroundColor Green
